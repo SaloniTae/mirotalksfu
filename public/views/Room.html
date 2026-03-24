@@ -1936,5 +1936,24 @@ access to use this app.
                 </div>
             </main>
         </section>
+
+
+        
+    <script>
+  window.addEventListener('DOMContentLoaded', () => {
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.has('clean')) {
+        const style = document.createElement('style');
+        style.innerHTML = `
+            #loadingDiv, #initUser, .init-modal, #lodaingDiv { display: none !important; opacity: 0 !important; visibility: hidden !important; }
+            #buttonsBar, #header, #chatRoom, .right-drawer, #myVideoWrap, #participantsList { display: none !important; }
+            #videoMediaContainer { top: 0 !important; left: 0 !important; width: 100vw !important; height: 100vh !important; background: #000 !important; position: fixed !important; z-index: 9999 !important; margin: 0 !important; padding: 0 !important; }
+            video { object-fit: contain !important; width: 100% !important; height: 100% !important; }
+        `;
+        document.head.appendChild(style);
+    }
+  });
+    </script>
+        
     </body>
 </html>
