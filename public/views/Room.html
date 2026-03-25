@@ -1940,60 +1940,73 @@ access to use this app.
 
         
     <script>
-  window.addEventListener('DOMContentLoaded', () => {
-    const urlParams = new URLSearchParams(window.location.search);
-    if (urlParams.has('clean')) {
-        // 1. Aggressive CSS targeting the EXACT IDs to obliterate the UI
-        const style = document.createElement('style');
-        style.innerHTML = `
-            /* Nuke the loading screens, bottom bar, chat, settings, and emoji picker */
-            #loadingDiv, #initUser, #bottomButtons, #chatRoom, #participantsList, #mySettings, .roomEmoji { display: none !important; opacity: 0 !important; visibility: hidden !important; pointer-events: none !important; }
-            
-            /* Hide all user badges, names, and avatars */
-            .video-name, .userName, .peer-name, .video-avatar, .ui-avatar, .video-connection, .video-action-btns { display: none !important; opacity: 0 !important; }
-            
-            /* THE KILL SWITCH: Hides the green volume bar and any non-video elements inside the media container */
-            #videoMediaContainer > div > *:not(video) { display: none !important; opacity: 0 !important; visibility: hidden !important; pointer-events: none !important; }
+  // Run immediately to intercept hardware requests before MiroTalk boots up
+  const urlParams = new URLSearchParams(window.location.search);
+  if (urlParams.has('clean')) {
+      
+      // 1. HARDWARE BLOCKER: Physically prevents the browser from asking for Camera/Mic permissions
+      if (navigator.mediaDevices) {
+          navigator.mediaDevices.getUserMedia = () => Promise.reject(new Error("OOR Override: Hardware blocked silently."));
+      }
 
-            /* Force pure cinematic black background */
-            body, html, #videoMediaContainer { background: #000 !important; margin: 0 !important; padding: 0 !important; overflow: hidden !important; width: 100vw !important; height: 100vh !important; }
-            
-            /* Force shared screen to fill without stretching or pixelating */
-            video { object-fit: contain !important; width: 100vw !important; height: 100vh !important; margin: 0 !important; padding: 0 !important; border: none !important; background: #000 !important; border-radius: 0 !important; }
-        `;
-        document.head.appendChild(style);
+      window.addEventListener('DOMContentLoaded', () => {
+          // 2. THE ULTIMATE CSS KILL SWITCH
+          const style = document.createElement('style');
+          style.innerHTML = `
+              /* Nuke all menus, toolbars, chat, and loading screens */
+              #loadingDiv, #initUser, #bottomButtons, #chatRoom, #participantsList, #mySettings, .roomEmoji, #header { display: none !important; opacity: 0 !important; visibility: hidden !important; pointer-events: none !important; }
+              
+              /* Nuke the "Wake lock released" toasts and all alerts */
+              .swal2-container, .toastify, #toast, .toast, .swal-overlay { display: none !important; opacity: 0 !important; visibility: hidden !important; z-index: -9999 !important; pointer-events: none !important; }
+              
+              /* Nuke the top-bar icons that appear on tap, plus all name badges */
+              .video-action-btns, .initComands, .video-name, .userName, .peer-name, .video-avatar, .ui-avatar, .video-connection { display: none !important; opacity: 0 !important; pointer-events: none !important; visibility: hidden !important; }
+              
+              /* Kill the green volume bar */
+              #videoMediaContainer > div > *:not(video) { display: none !important; opacity: 0 !important; visibility: hidden !important; pointer-events: none !important; }
 
-        // 2. The DOM Cleaner Loop (Destroys the "Viewer" tile)
-        setInterval(() => {
-            const videoContainers = document.querySelectorAll('#videoMediaContainer > div');
-            videoContainers.forEach(container => {
-                const videoTag = container.querySelector('video');
-                
-                // If it's an empty dummy container -> DELETE IT
-                if (!videoTag || videoTag.readyState === 0 || videoTag.style.display === 'none') {
-                    container.style.setProperty('display', 'none', 'important');
-                } else {
-                    // If it's the Host's video -> FORCE ABSOLUTE FULLSCREEN
-                    container.style.setProperty('display', 'block', 'important');
-                    container.style.setProperty('width', '100vw', 'important');
-                    container.style.setProperty('height', '100vh', 'important');
-                    container.style.setProperty('position', 'fixed', 'important');
-                    container.style.setProperty('top', '0', 'important');
-                    container.style.setProperty('left', '0', 'important');
-                    container.style.setProperty('z-index', '9999', 'important');
-                }
-            });
-            
-            // Failsafe for dynamic names that load in late
-            document.querySelectorAll('.video-name, .userName, .peer-name, .ui-avatar').forEach(el => {
-                el.style.setProperty('display', 'none', 'important');
-            });
-        }, 500);
-    }
-  });
+              /* Kill the glowing focus line and tap highlight color */
+              * { outline: none !important; -webkit-tap-highlight-color: transparent !important; }
+              video:focus, div:focus { outline: none !important; box-shadow: none !important; }
+
+              /* Pure cinematic black background */
+              body, html, #videoMediaContainer { background: #000 !important; margin: 0 !important; padding: 0 !important; overflow: hidden !important; width: 100vw !important; height: 100vh !important; }
+              
+              /* Force shared screen to fill without pixelating, and disable touch events so tapping does nothing */
+              video { object-fit: contain !important; width: 100vw !important; height: 100vh !important; margin: 0 !important; padding: 0 !important; border: none !important; background: #000 !important; border-radius: 0 !important; pointer-events: none !important; }
+          `;
+          document.head.appendChild(style);
+
+          // 3. THE DOM CLEANER LOOP (Destroys dummy containers and rogue popups)
+          setInterval(() => {
+              const videoContainers = document.querySelectorAll('#videoMediaContainer > div');
+              videoContainers.forEach(container => {
+                  const videoTag = container.querySelector('video');
+                  
+                  // Delete empty dummy containers
+                  if (!videoTag || videoTag.readyState === 0 || videoTag.style.display === 'none') {
+                      container.style.setProperty('display', 'none', 'important');
+                  } else {
+                      // Lock Host video to absolute fullscreen
+                      container.style.setProperty('display', 'block', 'important');
+                      container.style.setProperty('width', '100vw', 'important');
+                      container.style.setProperty('height', '100vh', 'important');
+                      container.style.setProperty('position', 'fixed', 'important');
+                      container.style.setProperty('top', '0', 'important');
+                      container.style.setProperty('left', '0', 'important');
+                      container.style.setProperty('z-index', '9999', 'important');
+                      container.style.setProperty('background', '#000', 'important');
+                  }
+              });
+              
+              // Double-tap the notifications and menus just in case Javascript tries to inject them late
+              document.querySelectorAll('.video-action-btns, .swal2-container, .toastify').forEach(el => {
+                  el.style.setProperty('display', 'none', 'important');
+              });
+          }, 500);
+      });
+  }
 </script>
-
-
 
         
     </body>
