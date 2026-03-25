@@ -1943,49 +1943,57 @@ access to use this app.
   window.addEventListener('DOMContentLoaded', () => {
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.has('clean')) {
-        // 1. Aggressive CSS to hide all badges, avatars, and UI bars
+        // 1. Aggressive CSS targeting the EXACT IDs to obliterate the UI
         const style = document.createElement('style');
         style.innerHTML = `
-            #loadingDiv, #initUser, .init-modal, #lodaingDiv { display: none !important; opacity: 0 !important; visibility: hidden !important; }
-            #buttonsBar, #header, #chatRoom, .right-drawer, #participantsList { display: none !important; }
+            /* Nuke the loading screens, bottom bar, chat, settings, and emoji picker */
+            #loadingDiv, #initUser, #bottomButtons, #chatRoom, #participantsList, #mySettings, .roomEmoji { display: none !important; opacity: 0 !important; visibility: hidden !important; pointer-events: none !important; }
+            
+            /* Hide all user badges, names, and avatars */
             .video-name, .userName, .peer-name, .video-avatar, .ui-avatar, .video-connection, .video-action-btns { display: none !important; opacity: 0 !important; }
+            
+            /* THE KILL SWITCH: Hides the green volume bar and any non-video elements inside the media container */
+            #videoMediaContainer > div > *:not(video) { display: none !important; opacity: 0 !important; visibility: hidden !important; pointer-events: none !important; }
+
+            /* Force pure cinematic black background */
             body, html, #videoMediaContainer { background: #000 !important; margin: 0 !important; padding: 0 !important; overflow: hidden !important; width: 100vw !important; height: 100vh !important; }
+            
+            /* Force shared screen to fill without stretching or pixelating */
             video { object-fit: contain !important; width: 100vw !important; height: 100vh !important; margin: 0 !important; padding: 0 !important; border: none !important; background: #000 !important; border-radius: 0 !important; }
         `;
         document.head.appendChild(style);
 
-        // 2. The DOM Cleaner Loop (Destroys the "Viewer" tile & Forces Fullscreen)
+        // 2. The DOM Cleaner Loop (Destroys the "Viewer" tile)
         setInterval(() => {
             const videoContainers = document.querySelectorAll('#videoMediaContainer > div');
             videoContainers.forEach(container => {
                 const videoTag = container.querySelector('video');
                 
-                // If this box doesn't have a playing video (e.g., the Viewer's dummy avatar) -> NUKE IT
+                // If it's an empty dummy container -> DELETE IT
                 if (!videoTag || videoTag.readyState === 0 || videoTag.style.display === 'none') {
                     container.style.setProperty('display', 'none', 'important');
                 } else {
-                    // If it has a video (The Host) -> FORCE ABSOLUTE FULLSCREEN
+                    // If it's the Host's video -> FORCE ABSOLUTE FULLSCREEN
                     container.style.setProperty('display', 'block', 'important');
                     container.style.setProperty('width', '100vw', 'important');
                     container.style.setProperty('height', '100vh', 'important');
                     container.style.setProperty('position', 'fixed', 'important');
                     container.style.setProperty('top', '0', 'important');
                     container.style.setProperty('left', '0', 'important');
-                    container.style.setProperty('margin', '0', 'important');
-                    container.style.setProperty('padding', '0', 'important');
-                    container.style.setProperty('border', 'none', 'important');
                     container.style.setProperty('z-index', '9999', 'important');
                 }
             });
             
-            // Failsafe: Hide any dynamically generated name badges or icons
+            // Failsafe for dynamic names that load in late
             document.querySelectorAll('.video-name, .userName, .peer-name, .ui-avatar').forEach(el => {
                 el.style.setProperty('display', 'none', 'important');
             });
-        }, 500); // Scans twice a second to ensure the grid never breaks
+        }, 500);
     }
   });
 </script>
+
+
 
         
     </body>
