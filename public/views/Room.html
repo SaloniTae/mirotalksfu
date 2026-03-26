@@ -1991,38 +1991,33 @@ access to use this app.
   }
 
   // ==============================================================
-  // 2. THE HOST OVERRIDE (Forcing the UI to load on RDP)
+  // 2. THE HOST OVERRIDE (Phantom Hardware Spoofing for RDP)
   // ==============================================================
   if (urlParams.has('host')) {
-      // Fake the hardware failure instantly so it doesn't get stuck waiting
-      if (navigator.mediaDevices) {
-          navigator.mediaDevices.getUserMedia = () => Promise.reject(new Error("Host Override: Bypassing hardware."));
-      }
-      window.addEventListener('DOMContentLoaded', () => {
-          const style = document.createElement('style');
-          style.innerHTML = `
-              /* Obliterate the stuck permission screens */
-              #loadingDiv, #initUser, .init-modal { display: none !important; opacity: 0 !important; visibility: hidden !important; z-index: -9999 !important; pointer-events: none !important; }
-              
-              /* Force the bottom bar and necessary buttons to be visible */
-              #bottomButtons { display: flex !important; visibility: visible !important; opacity: 1 !important; z-index: 9999 !important; }
-              #startScreenButton, #stopScreenButton, #settingsSplit, #settingsButton { display: inline-block !important; visibility: visible !important; opacity: 1 !important; }
-              
-              /* Ensure the Settings menu floats above everything when opened */
-              #mySettings { z-index: 10000 !important; }
-          `;
-          document.head.appendChild(style);
+      // Create a silent, blank digital media stream to trick the engine
+      const createPhantomStream = () => {
+          const canvas = document.createElement("canvas");
+          canvas.width = 2; canvas.height = 2;
+          const stream = canvas.captureStream(10); // Phantom Video Feed
+          try {
+              const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+              const dest = audioCtx.createMediaStreamDestination();
+              stream.addTrack(dest.stream.getAudioTracks()[0]); // Phantom Audio Feed
+          } catch (e) {}
+          return stream;
+      };
 
-          // Aggressively remove the 'hidden' class from the crucial host controls
-          setInterval(() => {
-              ['bottomButtons', 'startScreenButton', 'settingsSplit', 'settingsButton'].forEach(id => {
-                  const el = document.getElementById(id);
-                  if (el) el.classList.remove('hidden');
-              });
-          }, 500);
-      });
+      if (navigator.mediaDevices) {
+          // Feed the phantom stream to MiroTalk so it boots up perfectly
+          navigator.mediaDevices.getUserMedia = () => Promise.resolve(createPhantomStream());
+          navigator.mediaDevices.enumerateDevices = () => Promise.resolve([
+              { kind: 'videoinput', deviceId: 'phantom-vid', label: 'Phantom Camera' },
+              { kind: 'audioinput', deviceId: 'phantom-aud', label: 'Phantom Microphone' }
+          ]);
+      }
   }
 </script>
+
 
 
         
