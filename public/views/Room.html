@@ -1991,30 +1991,21 @@ access to use this app.
   }
 
   // ==============================================================
-  // 2. THE HOST OVERRIDE (Phantom Hardware Spoofing for RDP)
+  // 2. THE HOST OVERRIDE (Safely undoes the hidden classes)
   // ==============================================================
   if (urlParams.has('host')) {
-      // Create a silent, blank digital media stream to trick the engine
-      const createPhantomStream = () => {
-          const canvas = document.createElement("canvas");
-          canvas.width = 2; canvas.height = 2;
-          const stream = canvas.captureStream(10); // Phantom Video Feed
-          try {
-              const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-              const dest = audioCtx.createMediaStreamDestination();
-              stream.addTrack(dest.stream.getAudioTracks()[0]); // Phantom Audio Feed
-          } catch (e) {}
-          return stream;
-      };
-
-      if (navigator.mediaDevices) {
-          // Feed the phantom stream to MiroTalk so it boots up perfectly
-          navigator.mediaDevices.getUserMedia = () => Promise.resolve(createPhantomStream());
-          navigator.mediaDevices.enumerateDevices = () => Promise.resolve([
-              { kind: 'videoinput', deviceId: 'phantom-vid', label: 'Phantom Camera' },
-              { kind: 'audioinput', deviceId: 'phantom-aud', label: 'Phantom Microphone' }
-          ]);
-      }
+      window.addEventListener('DOMContentLoaded', () => {
+          const style = document.createElement('style');
+          style.innerHTML = `
+              /* Physically override the developers' hidden classes to keep the control bar active */
+              #bottomButtons { display: flex !important; visibility: visible !important; opacity: 1 !important; pointer-events: auto !important; }
+              #startScreenButton, #settingsSplit, #settingsButton { display: inline-block !important; visibility: visible !important; opacity: 1 !important; pointer-events: auto !important; }
+              
+              /* Ensure the settings menu layers properly over the video */
+              #mySettings { z-index: 10000 !important; }
+          `;
+          document.head.appendChild(style);
+      });
   }
 </script>
 
