@@ -1943,54 +1943,36 @@ access to use this app.
 
         
     <script>
-  // Run immediately to intercept hardware requests before MiroTalk boots up
   const urlParams = new URLSearchParams(window.location.search);
+
+  // ==============================================================
+  // 1. THE VIEWER OVERRIDE (Locks down the UI for the audience)
+  // ==============================================================
   if (urlParams.has('clean')) {
-      
-      // 1. HARDWARE BLOCKER: Physically prevents the browser from asking for Camera/Mic permissions
       if (navigator.mediaDevices) {
           navigator.mediaDevices.getUserMedia = () => Promise.reject(new Error("OOR Override: Hardware blocked silently."));
       }
-
       window.addEventListener('DOMContentLoaded', () => {
-          // 2. THE ULTIMATE CSS KILL SWITCH
           const style = document.createElement('style');
           style.innerHTML = `
-              /* Nuke all menus, toolbars, chat, and loading screens */
               #loadingDiv, #initUser, #bottomButtons, #chatRoom, #participantsList, #mySettings, .roomEmoji, #header { display: none !important; opacity: 0 !important; visibility: hidden !important; pointer-events: none !important; }
-              
-              /* Nuke the "Wake lock released" toasts and all alerts */
               .swal2-container, .toastify, #toast, .toast, .swal-overlay { display: none !important; opacity: 0 !important; visibility: hidden !important; z-index: -9999 !important; pointer-events: none !important; }
-              
-              /* Nuke the top-bar icons that appear on tap, plus all name badges */
               .video-action-btns, .initComands, .video-name, .userName, .peer-name, .video-avatar, .ui-avatar, .video-connection { display: none !important; opacity: 0 !important; pointer-events: none !important; visibility: hidden !important; }
-              
-              /* Kill the green volume bar */
               #videoMediaContainer > div > *:not(video) { display: none !important; opacity: 0 !important; visibility: hidden !important; pointer-events: none !important; }
-
-              /* Kill the glowing focus line and tap highlight color */
               * { outline: none !important; -webkit-tap-highlight-color: transparent !important; }
               video:focus, div:focus { outline: none !important; box-shadow: none !important; }
-
-              /* Pure cinematic black background */
               body, html, #videoMediaContainer { background: #000 !important; margin: 0 !important; padding: 0 !important; overflow: hidden !important; width: 100vw !important; height: 100vh !important; }
-              
-              /* Force shared screen to fill without pixelating, and disable touch events so tapping does nothing */
               video { object-fit: contain !important; width: 100vw !important; height: 100vh !important; margin: 0 !important; padding: 0 !important; border: none !important; background: #000 !important; border-radius: 0 !important; pointer-events: none !important; }
           `;
           document.head.appendChild(style);
 
-          // 3. THE DOM CLEANER LOOP (Destroys dummy containers and rogue popups)
           setInterval(() => {
               const videoContainers = document.querySelectorAll('#videoMediaContainer > div');
               videoContainers.forEach(container => {
                   const videoTag = container.querySelector('video');
-                  
-                  // Delete empty dummy containers
                   if (!videoTag || videoTag.readyState === 0 || videoTag.style.display === 'none') {
                       container.style.setProperty('display', 'none', 'important');
                   } else {
-                      // Lock Host video to absolute fullscreen
                       container.style.setProperty('display', 'block', 'important');
                       container.style.setProperty('width', '100vw', 'important');
                       container.style.setProperty('height', '100vh', 'important');
@@ -2001,15 +1983,47 @@ access to use this app.
                       container.style.setProperty('background', '#000', 'important');
                   }
               });
-              
-              // Double-tap the notifications and menus just in case Javascript tries to inject them late
               document.querySelectorAll('.video-action-btns, .swal2-container, .toastify').forEach(el => {
                   el.style.setProperty('display', 'none', 'important');
               });
           }, 500);
       });
   }
+
+  // ==============================================================
+  // 2. THE HOST OVERRIDE (Forcing the UI to load on RDP)
+  // ==============================================================
+  if (urlParams.has('host')) {
+      // Fake the hardware failure instantly so it doesn't get stuck waiting
+      if (navigator.mediaDevices) {
+          navigator.mediaDevices.getUserMedia = () => Promise.reject(new Error("Host Override: Bypassing hardware."));
+      }
+      window.addEventListener('DOMContentLoaded', () => {
+          const style = document.createElement('style');
+          style.innerHTML = `
+              /* Obliterate the stuck permission screens */
+              #loadingDiv, #initUser, .init-modal { display: none !important; opacity: 0 !important; visibility: hidden !important; z-index: -9999 !important; pointer-events: none !important; }
+              
+              /* Force the bottom bar and necessary buttons to be visible */
+              #bottomButtons { display: flex !important; visibility: visible !important; opacity: 1 !important; z-index: 9999 !important; }
+              #startScreenButton, #stopScreenButton, #settingsSplit, #settingsButton { display: inline-block !important; visibility: visible !important; opacity: 1 !important; }
+              
+              /* Ensure the Settings menu floats above everything when opened */
+              #mySettings { z-index: 10000 !important; }
+          `;
+          document.head.appendChild(style);
+
+          // Aggressively remove the 'hidden' class from the crucial host controls
+          setInterval(() => {
+              ['bottomButtons', 'startScreenButton', 'settingsSplit', 'settingsButton'].forEach(id => {
+                  const el = document.getElementById(id);
+                  if (el) el.classList.remove('hidden');
+              });
+          }, 500);
+      });
+  }
 </script>
+
 
         
     </body>
